@@ -49,7 +49,7 @@ llm = ChatOpenAI(
 # ----------------------------
 CSV_PATH = '../data/ted_talks_en.csv'
 CHUNK_SIZE = 512 # trying https://arxiv.org/pdf/2407.01219
-CHUNK_OVERLAP = 20
+CHUNK_OVERLAP = 51
 
 # ----------------------------
 # Pinecone
