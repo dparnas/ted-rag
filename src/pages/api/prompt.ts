@@ -67,7 +67,7 @@ async function agentRefineQuestion(openai: OpenAI, question: string) {
   const resp = await openai.responses.create({
     model: CHAT_MODEL,
     reasoning: { effort: "medium" },
-    temperature: 0,
+    // temperature: 0,
     input: [
       { role: "system", content: AGENT_SYSTEM_PROMPT },
       { role: "user", content: question },
