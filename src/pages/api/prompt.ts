@@ -67,14 +67,14 @@ async function agentRefineQuestion(openai: OpenAI, question: string) {
   const resp = await openai.responses.create({
     model: CHAT_MODEL,
     reasoning: { effort: "medium" },
-    // temperature: 0,
-    messages: [
+    temperature: 0,
+    input: [
       { role: "system", content: AGENT_SYSTEM_PROMPT },
       { role: "user", content: question },
     ],
   });
 
-  const raw = resp.choices[0]?.message?.content ?? "";
+  const raw = resp.output_text ?? "";
   try {
     const parsed = JSON.parse(raw);
     const task_id = Number(parsed.task_id);
@@ -214,14 +214,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const llm = await openai.responses.create({
       model: CHAT_MODEL,
       // temperature: 0.2,
-      messages: [
+      input: [
         { role: "system", content: augmented.System },
         { role: "user", content: augmented.User },
       ],
     });
 
-    const responseText =
-      llm.choices[0]?.message?.content ?? "I don’t know based on the provided TED data.";
+    const responseText = llm.output_text ?? "I don’t know based on the provided TED data.";
 
     // 5) Return required JSON schema
     return res.status(200).json({
