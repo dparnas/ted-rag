@@ -64,11 +64,11 @@ function buildTaskInstr(taskId: number): string {
 }
 
 async function agentRefineQuestion(openai: OpenAI, question: string) {
-  const resp = await openai.chat.responses.create({
+  const resp = await openai.responses.create({
     model: CHAT_MODEL,
     reasoning: { effort: "medium" },
-    temperature: 0,
-    input: [
+    // temperature: 0,
+    messages: [
       { role: "system", content: AGENT_SYSTEM_PROMPT },
       { role: "user", content: question },
     ],
@@ -211,17 +211,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const augmented = buildAugmentedPrompt(question, agent.refined_query, contexts, agent.task_id);
 
     // 4) LLM answer
-    const completion = await openai.chat.responses.create({
+    const llm = await openai.responses.create({
       model: CHAT_MODEL,
       // temperature: 0.2,
-      input: [
+      messages: [
         { role: "system", content: augmented.System },
         { role: "user", content: augmented.User },
       ],
     });
 
     const responseText =
-      completion.choices[0]?.message?.content ?? "I don’t know based on the provided TED data.";
+      llm.choices[0]?.message?.content ?? "I don’t know based on the provided TED data.";
 
     // 5) Return required JSON schema
     return res.status(200).json({
