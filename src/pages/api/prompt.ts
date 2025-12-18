@@ -66,7 +66,7 @@ function buildTaskInstr(taskId: number): string {
 async function agentRefineQuestion(openai: OpenAI, question: string) {
   const resp = await openai.chat.completions.create({
     model: CHAT_MODEL,
-    temperature: 0,
+    // temperature: 0,
     messages: [
       { role: "system", content: AGENT_SYSTEM_PROMPT },
       { role: "user", content: question },
@@ -212,7 +212,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // 4) LLM answer
     const completion = await openai.chat.completions.create({
       model: CHAT_MODEL,
-      temperature: 0.2,
+      // temperature: 0.2,
       messages: [
         { role: "system", content: augmented.System },
         { role: "user", content: augmented.User },
