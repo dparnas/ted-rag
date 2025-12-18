@@ -12,20 +12,20 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from pinecone import Pinecone
 
-llmod_key = api_keys['LLMOD_KEY']
-llmod_base_url = "https://api.llmod.ai"
-llmod_embedding_model = "RPRTHPB-text-embedding-3-small"
-llmod_chat_model = "RPRTHPB-gpt-5-mini"
+llmod_key = api_keys['open_ai_key'] # api_keys['LLMOD_KEY']
+llmod_base_url = "https://api.openai.com/v1" # "https://api.llmod.ai"
+llmod_embedding_model = "text-embedding-3-small" # "RPRTHPB-text-embedding-3-small"
+llmod_chat_model = "gpt-5-mini" # "RPRTHPB-gpt-5-mini"
 
 PINECONE_API_KEY = api_keys['PINECONE_API_KEY']
 PINECONE_INDEX_NAME = "ted-rag"
 
-def extract_titles(text):
+def extract_lists(text):
     data = ast.literal_eval(text)
-    titles = "; ".join(data.values())
+    str_list = "; ".join(data.values())
 
     # Remove remaining escape characters
-    return titles
+    return str_list
 
 embeddings = OpenAIEmbeddings(
     model=llmod_embedding_model,  # Your Azure deployment name
@@ -89,8 +89,9 @@ for j, row in tqdm(df.iterrows(), total=len(df)):
             "metadata": {
                 "talk_id": str(row["talk_id"]),
                 "title": row["title"],
+                "speakers": extract_lists(row["all_speakers"]),
                 "topics": row["topics"],
-                "related_talks": extract_titles(row["related_talks"]),
+                "related_talks": extract_lists(row["related_talks"]),
                 "chunk": chunk,
             }
         })
@@ -100,7 +101,7 @@ for j, row in tqdm(df.iterrows(), total=len(df)):
         index.upsert(vectors=vectors, namespace='testing1')
         vectors = []
 
-    if j > 10:
+    if j > 100:
         break
 
 # final flush
