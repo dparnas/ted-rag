@@ -166,7 +166,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const question = String(body?.question ?? "").trim();
     if (!question) return res.status(400).json({ error: "Missing 'question' in JSON body" });
 
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    const OPENAI_API_KEY = process.env.LLMOD_API_KEY;
     const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
     const PINECONE_INDEX_NAME = process.env.PINECONE_INDEX_NAME;
 
