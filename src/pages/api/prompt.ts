@@ -79,6 +79,15 @@ function buildTaskInstr(taskId: number): string {
       return "";
   }
 }
+function contentToString(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((b: any) => (typeof b?.text === "string" ? b.text : typeof b === "string" ? b : ""))
+      .join("");
+  }
+  return "";
+}
 
 async function agentRefineQuestion(openai_key: string, question: string) {
   //await openai.responses.create({
@@ -91,7 +100,7 @@ async function agentRefineQuestion(openai_key: string, question: string) {
 
   const raw_response = await agent.invoke([{ role: "system", content: AGENT_SYSTEM_PROMPT },
     { role: "user", content: question },]);
-  const response = raw_response.content ?? "";
+  const response = contentToString(raw_response.content);
   try {
     const parsed = JSON.parse(response);
     const task_id = Number(parsed.task_id);
