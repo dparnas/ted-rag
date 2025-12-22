@@ -14,9 +14,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     model: "RPRTHPB-gpt-5-mini",
   });
 
-  const response = await llm.invoke("What is the capital of Georgia?").content;
+  const response = await llm.invoke("What is the capital of Georgia?");
+  const text = response.content ?? "";
 
-  return res.status(200).json({response: response});
+  return res.status(200).json({response: text});
 }
 
 //
