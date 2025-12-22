@@ -9,13 +9,14 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
 DEFAULT_TOP_K = 10
-LLMOD_KEY = api_keys['open_ai_key'] # api_keys['LLMOD_KEY']
-LLMOD_BASE_URL = "https://api.openai.com/v1" # "https://api.llmod.ai"
-LLMOD_EMBEDDING_MODEL = "text-embedding-3-small" # "RPRTHPB-text-embedding-3-small"
-LLMOD_CHAT_MODEL = "gpt-5-mini" # "RPRTHPB-gpt-5-mini"
+LLMOD_KEY = api_keys['LLMOD_KEY'] # api_keys['open_ai_key'] #
+LLMOD_BASE_URL = "https://api.llmod.ai/v1" # "https://api.openai.com/v1" #
+LLMOD_EMBEDDING_MODEL = "RPRTHPB-text-embedding-3-small" # "text-embedding-3-small" #
+LLMOD_CHAT_MODEL = "RPRTHPB-gpt-5-mini" # "gpt-5-mini" #
 
 PINECONE_API_KEY = api_keys['PINECONE_API_KEY']
 PINECONE_INDEX_NAME = "ted-rag"
+NAMESPACE = 'testing1'
 
 SYSTEM_PROMPT = """You are a TED Talk assistant that answers questions strictly and
 only based on the TED dataset context provided to you (metadata
@@ -75,7 +76,7 @@ def agent_refine_question(question: str) -> Dict[str, Any]:
         model=LLMOD_CHAT_MODEL,
         base_url=LLMOD_BASE_URL,
         api_key=LLMOD_KEY,
-        temperature=0,  # stable routing
+        # temperature=0,  # stable routing
         reasoning_effort="medium"
     )
 
@@ -130,7 +131,7 @@ def _get_context(q_vec, top_k):
         vector=q_vec,
         top_k=top_k,
         include_metadata=True,
-        namespace="testing1"
+        namespace=NAMESPACE
     )
 
     print("querying Vector DB")

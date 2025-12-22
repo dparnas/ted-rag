@@ -8,17 +8,18 @@ import ast
 import joblib
 api_keys = joblib.load('../data/api_keys.pkl')
 
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter, TokenTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from pinecone import Pinecone
 
-llmod_key = api_keys['open_ai_key'] # api_keys['LLMOD_KEY']
-llmod_base_url = "https://api.openai.com/v1" # "https://api.llmod.ai"
-llmod_embedding_model = "text-embedding-3-small" # "RPRTHPB-text-embedding-3-small"
-llmod_chat_model = "gpt-5-mini" # "RPRTHPB-gpt-5-mini"
+llmod_key = api_keys['LLMOD_KEY'] # api_keys['open_ai_key'] #
+llmod_base_url = "https://api.llmod.ai/v1" # "https://api.openai.com/v1" #
+llmod_embedding_model = "RPRTHPB-text-embedding-3-small" # "text-embedding-3-small" #
+llmod_chat_model =  "RPRTHPB-gpt-5-mini" # "gpt-5-mini"
 
 PINECONE_API_KEY = api_keys['PINECONE_API_KEY']
 PINECONE_INDEX_NAME = "ted-rag"
+NAMESPACE = 'testing1' # 'final' #
 
 def extract_lists(text):
     data = ast.literal_eval(text)
@@ -34,16 +35,8 @@ embeddings = OpenAIEmbeddings(
 )
 # # Use as normal
 # vector = embeddings.embed_query("Hello world")
-
-llm = ChatOpenAI(
-    model=llmod_chat_model,  # Your Azure deployment name
-    base_url=llmod_base_url,
-    api_key=llmod_key
-)
 #
-# response = llm.invoke("2+2 =")
-# print(response)
-
+# exit()
 # ----------------------------
 # Config
 # ----------------------------
@@ -63,7 +56,7 @@ index = pc.Index(PINECONE_INDEX_NAME)
 # ----------------------------
 df = pd.read_csv(CSV_PATH)
 
-splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+splitter = TokenTextSplitter.from_tiktoken_encoder(
     encoding_name="cl100k_base",
     chunk_size=CHUNK_SIZE,
     chunk_overlap=CHUNK_OVERLAP,
@@ -98,7 +91,7 @@ for j, row in tqdm(df.iterrows(), total=len(df)):
 
     # batch upserts (important)
     if len(vectors) >= 100:
-        index.upsert(vectors=vectors, namespace='testing1')
+        index.upsert(vectors=vectors, namespace=NAMESPACE)
         vectors = []
 
     if j > 100:
@@ -106,7 +99,7 @@ for j, row in tqdm(df.iterrows(), total=len(df)):
 
 # final flush
 if vectors:
-    index.upsert(vectors=vectors, namespace='testing1')
+    index.upsert(vectors=vectors, namespace=NAMESPACE)
 print("largest number of chunks per transcript", largest_n_chunks)
 print("✅ Ingestion complete")
 

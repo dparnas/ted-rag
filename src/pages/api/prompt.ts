@@ -20,8 +20,8 @@ const DEFAULT_TOP_K = 10;
 const MAX_TOP_K = 30;
 const PINECONE_NAMESPACE = "testing1";
 
-const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL ?? "text-embedding-3-small";
-const CHAT_MODEL = process.env.CHAT_MODEL ?? "gpt-5-mini";
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL ?? "RPRTHPB-text-embedding-3-small";
+const CHAT_MODEL = process.env.CHAT_MODEL ?? "RPRTHPB-gpt-5-mini";
 
 const SYSTEM_PROMPT = `You are a TED Talk assistant that answers questions strictly and
 only based on the TED dataset context provided to you (metadata
