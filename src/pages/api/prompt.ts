@@ -122,7 +122,7 @@ async function embedQuery(openai_key: string, text: string): Promise<number[]> {
     },
     model: EMBEDDING_MODEL,
   });
-  const embedding = await emb_model.embed_query(text)
+  const embedding = await emb_model.embedQuery(text)
   const vec = embedding.data?.[0]?.embedding as number[] | undefined;
   if (!vec) throw new Error("Embedding failed");
   return vec;
