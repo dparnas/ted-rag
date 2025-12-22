@@ -11,7 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     configuration: {
       baseURL: "https://api.llmod.ai/v1"
     },
-    model: process.env.CHAT_MODEL,
+    model: "RPRTHPB-gpt-5-mini",
   });
 
   const response = await llm.invoke("What is the capital of Georgia?");
