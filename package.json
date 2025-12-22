@@ -21,6 +21,7 @@
     "eslint-config-next": "16.0.10",
     "typescript": "^5",
     "openai": "^4.0.0",
-    "@pinecone-database/pinecone": "^2.2.0"
+    "@pinecone-database/pinecone": "^2.2.0",
+    "@langchain/openai": "^1.1.6"
   }
 }

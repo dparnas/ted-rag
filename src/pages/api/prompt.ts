@@ -3,6 +3,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import OpenAI from "openai";
 import { Pinecone } from "@pinecone-database/pinecone";
+import { OpenAIEmbeddings, ChatOpenAI } from "@langchain/openai"
 
 type PromptRequest = { question: string };
 
@@ -63,18 +64,19 @@ function buildTaskInstr(taskId: number): string {
   }
 }
 
-async function agentRefineQuestion(openai: OpenAI, question: string) {
-  const resp = await openai.responses.create({
+async function agentRefineQuestion(openai_key: string, question: string) {
+  //await openai.responses.create({
+  const agent = new ChatOpenAI({
+    apiKey: openai_key,
     model: CHAT_MODEL,
     reasoning: { effort: "medium" },
-    // temperature: 0,
-    input: [
-      { role: "system", content: AGENT_SYSTEM_PROMPT },
-      { role: "user", content: question },
-    ],
+    configuration: {baseURL: "https://api.llmod.ai/v1"},
   });
 
-  const raw = resp.output_text ?? "";
+  const raw = await agent.invoke([{ role: "system", content: AGENT_SYSTEM_PROMPT },
+      { role: "user", content: question },
+    ]).content ?? "";
+      // resp.output_text ?? "";
   try {
     const parsed = JSON.parse(raw);
     const task_id = Number(parsed.task_id);
@@ -88,12 +90,16 @@ async function agentRefineQuestion(openai: OpenAI, question: string) {
   }
 }
 
-async function embedQuery(openai: OpenAI, text: string): Promise<number[]> {
-  const emb = await openai.embeddings.create({
-    model: EMBEDDING_MODEL,
-    input: text,
-  });
-  const vec = emb.data?.[0]?.embedding as number[] | undefined;
+async function embedQuery(openai_key: string, text: string): Promise<number[]> {
+  const emb_model = new OpenAIEmbeddings({
+  apiKey: openai_key,
+  configuration: {
+    baseURL: "https://api.llmod.ai/v1"
+  },
+  model: EMBEDDING_MODEL,
+});
+
+  const vec = await emb_model.embed_query(text).data?.[0]?.embedding as number[] | undefined;
   if (!vec) throw new Error("Embedding failed");
   return vec;
 }
@@ -174,10 +180,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!PINECONE_API_KEY) return res.status(500).json({ error: "Server missing PINECONE_API_KEY" });
     if (!PINECONE_INDEX_NAME) return res.status(500).json({ error: "Server missing PINECONE_INDEX_NAME" });
 
-    const openai = new OpenAI({ apiKey: OPENAI_API_KEY, baseURL: "https://api.llmod.ai/v1",});
+    // const openai = new OpenAI({ apiKey: OPENAI_API_KEY, baseURL: "https://api.llmod.ai/v1",});
 
     // 1) Agent step: classify + refine
-    const agent = await agentRefineQuestion(openai, question);
+    const agent = await agentRefineQuestion(OPENAI_API_KEY, question);
 
     // If router says unrelated, still return required schema
     if (agent.task_id === 5) {
@@ -194,7 +200,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // 2) Retrieval (task-aware)
     const initialTopK = agent.task_id === 2 ? Math.min(MAX_TOP_K, Math.max(DEFAULT_TOP_K, 15)) : DEFAULT_TOP_K;
 
-    const qVec = await embedQuery(openai, agent.refined_query);
+    const qVec = await embedQuery(OPENAI_API_KEY, agent.refined_query);
 
     let contexts = await queryPinecone(PINECONE_INDEX_NAME, qVec, initialTopK);
 
@@ -211,16 +217,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const augmented = buildAugmentedPrompt(question, agent.refined_query, contexts, agent.task_id);
 
     // 4) LLM answer
-    const llm = await openai.responses.create({
+    // const llm = await openai.responses.create({
+    //   model: CHAT_MODEL,
+    //   // temperature: 0.2,
+    //   input: [
+    //     { role: "system", content: augmented.System },
+    //     { role: "user", content: augmented.User },
+    //   ],
+    // });
+
+    const llm = new ChatOpenAI({
+      apiKey: OPENAI_API_KEY,
+      configuration: {
+        baseURL: "https://api.llmod.ai/v1"
+      },
       model: CHAT_MODEL,
-      // temperature: 0.2,
-      input: [
-        { role: "system", content: augmented.System },
-        { role: "user", content: augmented.User },
-      ],
     });
 
-    const responseText = llm.output_text ?? "I don’t know based on the provided TED data.";
+    const responseText = llm.invoke([{ role: "system", content: augmented.System },
+        { role: "user", content: augmented.User },]) ?? "I don’t know based on the provided TED data.";
+    // llm.output_text ?? "I don’t know based on the provided TED data.";
 
     // 5) Return required JSON schema
     return res.status(200).json({
