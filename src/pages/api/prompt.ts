@@ -174,7 +174,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!PINECONE_API_KEY) return res.status(500).json({ error: "Server missing PINECONE_API_KEY" });
     if (!PINECONE_INDEX_NAME) return res.status(500).json({ error: "Server missing PINECONE_INDEX_NAME" });
 
-    const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+    const openai = new OpenAI({ apiKey: OPENAI_API_KEY, baseURL: "https://api.llmod.ai/v1",});
 
     // 1) Agent step: classify + refine
     const agent = await agentRefineQuestion(openai, question);
