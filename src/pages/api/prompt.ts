@@ -256,7 +256,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       model: CHAT_MODEL,
     });
 
-    const response = llm.invoke([{ role: "system", content: augmented.System },
+    const response = await llm.invoke([{ role: "system", content: augmented.System },
         { role: "user", content: augmented.User },])
     const responseText = response.content ?? "I don’t know based on the provided TED data.";
     // llm.output_text ?? "I don’t know based on the provided TED data.";
