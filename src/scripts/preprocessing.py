@@ -19,14 +19,17 @@ llmod_chat_model =  "RPRTHPB-gpt-5-mini" # "gpt-5-mini"
 
 PINECONE_API_KEY = api_keys['PINECONE_API_KEY']
 PINECONE_INDEX_NAME = "ted-rag"
-NAMESPACE = 'testing1' # 'final' #
+NAMESPACE = 'final' # 'testing1' #
 
 def extract_lists(text):
-    data = ast.literal_eval(text)
-    str_list = "; ".join(data.values())
+    if pd.isna(text):
+        return ""
+    else:
+        data = ast.literal_eval(text)
+        str_list = "; ".join(data.values())
 
-    # Remove remaining escape characters
-    return str_list
+        # Remove remaining escape characters
+        return str_list
 
 embeddings = OpenAIEmbeddings(
     model=llmod_embedding_model,  # Your Azure deployment name
@@ -94,8 +97,8 @@ for j, row in tqdm(df.iterrows(), total=len(df)):
         index.upsert(vectors=vectors, namespace=NAMESPACE)
         vectors = []
 
-    if j > 100:
-        break
+    # if j > 100:
+    #     break
 
 # final flush
 if vectors:

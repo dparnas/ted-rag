@@ -7,7 +7,7 @@ q5 = "I want to learn about overcoming fear and anxiety. Help me to find a relev
 
 r = requests.post(
     "https://ted-rag-sandy.vercel.app/api/prompt",
-    json={"question": q5}
+    json={"question": q1}
 )
 
 # r = requests.get("https://ted-rag-sandy.vercel.app/api/stats")

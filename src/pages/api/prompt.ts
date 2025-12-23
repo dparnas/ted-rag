@@ -35,7 +35,7 @@ type ContextChunk = {
 
 const DEFAULT_TOP_K = 10;
 const MAX_TOP_K = 30;
-const PINECONE_NAMESPACE = "testing1";
+const PINECONE_NAMESPACE = "final"; //"testing1";
 
 const EMBEDDING_MODEL = "RPRTHPB-text-embedding-3-small";
 const CHAT_MODEL = "RPRTHPB-gpt-5-mini";
