@@ -13,7 +13,7 @@ q = "Your question"
 r = requests.post(
      "https://ted-rag-sandy.vercel.app/api/prompt",
      json={"question": q}
-)
+) 
 print(r.json())
 
 # get parameters
