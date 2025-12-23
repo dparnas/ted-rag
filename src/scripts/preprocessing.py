@@ -58,6 +58,8 @@ index = pc.Index(PINECONE_INDEX_NAME)
 # Load data
 # ----------------------------
 df = pd.read_csv(CSV_PATH)
+# add speakers to "all_speakers" where missing
+df.loc[df['all_speakers'].isna(), 'all_speakers'] = df[df['all_speakers'].isna()]['speaker_1'].apply(lambda x: "{0: '" + x + "'}")
 
 splitter = TokenTextSplitter.from_tiktoken_encoder(
     encoding_name="cl100k_base",
@@ -97,7 +99,7 @@ for j, row in tqdm(df.iterrows(), total=len(df)):
         index.upsert(vectors=vectors, namespace=NAMESPACE)
         vectors = []
 
-    # if j > 100:
+    # if j > 10:
     #     break
 
 # final flush

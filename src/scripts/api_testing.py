@@ -21,7 +21,7 @@ print(response_data['context'][-1])
 print('---------------------------------')
 print("AUGMENTED_PROMPT")
 # print(response_data['Augmented_prompt'])
-print(response_data['Augmented_prompt']['System'][:200])
+print(response_data['Augmented_prompt']['System'][:300])
 print(response_data['Augmented_prompt']['User'])
 print('---------------------------------')
 

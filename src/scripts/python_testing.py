@@ -8,7 +8,7 @@ from pinecone import Pinecone
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
-DEFAULT_TOP_K = 10
+DEFAULT_TOP_K = 7
 LLMOD_KEY = api_keys['LLMOD_KEY'] # api_keys['open_ai_key'] #
 LLMOD_BASE_URL = "https://api.llmod.ai/v1" # "https://api.openai.com/v1" #
 LLMOD_EMBEDDING_MODEL = "RPRTHPB-text-embedding-3-small" # "text-embedding-3-small" #
@@ -16,13 +16,14 @@ LLMOD_CHAT_MODEL = "RPRTHPB-gpt-5-mini" # "gpt-5-mini" #
 
 PINECONE_API_KEY = api_keys['PINECONE_API_KEY']
 PINECONE_INDEX_NAME = "ted-rag"
-NAMESPACE = 'testing1'
+NAMESPACE = 'final'
 
 SYSTEM_PROMPT = """You are a TED Talk assistant that answers questions strictly and
 only based on the TED dataset context provided to you (metadata
 and transcript passages). {} You must not use any external
 knowledge, the open internet, or information that is not explicitly
-contained in the retrieved context. If the answer cannot be
+contained in the retrieved context. If keywords were identified, then search for similar words in "topics."
+If the answer cannot be
 determined from the provided context, respond: “I don’t know
 based on the provided TED data.” Always explain your answer
 using the given context, quoting or paraphrasing the relevant
@@ -48,7 +49,7 @@ Classify the user's question into exactly one task_id in {1,2,3,4}:
 3 = Key Idea Summary Extraction (find a talk and summarize its key idea)
 4 = Recommendation with Evidence-Based Justification (recommend ONE talk + justify)
 
-Then rewrite the user's question into a concise retrieval query that will help semantic search.
+Then rewrite the user's question into a concise retrieval query that will help semantic search. Also SUGGEST keywords (up to 3).
 Output STRICT JSON with keys: task_id (int), refined_query (string), rationale (string <= 20 words).
 No extra keys, no markdown.
 If the question is unrelated to TED talks return 5 in task_id, a response in refined_query, an explanation in rationale.
@@ -142,6 +143,7 @@ def _get_context(q_vec, top_k):
         contexts.append({
             "talk_id": str(md.get("talk_id", "")),
             "title": str(md.get("title", "")),
+            "speakers": str(md.get("speakers", "")),
             "topics": str(md.get("topics", "")),
             "related_talks": str(md.get("related_talks", "")),
             "chunk": str(md.get("chunk", "")),
@@ -176,6 +178,7 @@ def build_augmented_prompt(question: str, modified_question: str, contexts: List
         f"Context {i+1}:\n"
         f"title: {c['title']}\n"
         f"topics: {c['topics']}\n"
+        f"speakers: {c['speakers']}\n"
         f"related_talks: {c['related_talks']}"
         f"chunk: {c['chunk']}"
         for i, c in enumerate(contexts)
@@ -191,7 +194,7 @@ def ask_rag(question: str) -> Dict[str, Any]:
     agent = agent_refine_question(question)
 
     if agent["task_id"] == 2:
-        top_k = min(30, max(DEFAULT_TOP_K, 15))
+        top_k = min(30, max(DEFAULT_TOP_K, 10))
     else:
         top_k = DEFAULT_TOP_K
 
@@ -229,10 +232,11 @@ def ask_rag(question: str) -> Dict[str, Any]:
     }
 
 if __name__ == "__main__":
-    # q1 = "I am looking for a TED talk about climate change and what individuals can do in their daily lives. Which talk would you recommend?"
-    # q2 = "Find a TED talk where the speaker talks about creativity. Provide the title and a short summary of the speech."
-    # q3 = "Which TED talk focuses on education or learning? Return a list of exactly 3 talk titles."
-    # q4 = "Find a TED talk about Rick and Morty and provide a short description of the talk." # Can't find
+    q1 = "I am looking for a TED talk about climate change and what individuals can do in their daily lives. Which talk would you recommend?"
+    q2 = "Find a TED talk where the speaker talks about creativity. Provide the title, speaker and a short summary of the speech."
+    q3 = "Which TED talks focus on education or learning? Return a list of exactly 3 talk titles."
+    q35 = "Which TED talks focus on education or learning? Return a list of exactly 2 talk titles."
+    q4 = "Find a TED talk about Rick and Morty and provide a short description of the talk." # Can't find
     q5 = "I want to learn about overcoming fear and anxiety. Help me to find a relevant TED talk and explain why its relevant."
     out = ask_rag(q5)
 

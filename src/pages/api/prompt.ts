@@ -44,8 +44,8 @@ const SYSTEM_PROMPT = `You are a TED Talk assistant that answers questions stric
 only based on the TED dataset context provided to you (metadata
 and transcript passages). {{TASK_INSTR}} You must not use any external
 knowledge, the open internet, or information that is not explicitly
-contained in the retrieved context. If the answer cannot be
-determined from the provided context, respond: “I don’t know
+contained in the retrieved context. If keywords were identified, then search for similar words in "topics."
+If the answer cannot be determined from the provided context, respond: “I don’t know
 based on the provided TED data.” Always explain your answer
 using the given context, quoting or paraphrasing the relevant
 transcript or metadata when helpful.
@@ -59,7 +59,7 @@ Classify the user's question into exactly one task_id in {1,2,3,4}:
 3 = Key Idea Summary Extraction (find a talk and summarize its key idea)
 4 = Recommendation with Evidence-Based Justification (recommend ONE talk + justify)
 
-Then rewrite the user's question into a concise retrieval query that will help semantic search.
+Then rewrite the user's question into a concise retrieval query that will help semantic search. Also SUGGEST keywords (up to 3).
 Output STRICT JSON with keys: task_id (int), refined_query (string), rationale (string <= 20 words).
 No extra keys, no markdown.
 If the question is unrelated to TED talks return 5 in task_id, a response in refined_query, an explanation in rationale.
@@ -89,12 +89,12 @@ function contentToString(content: unknown): string {
   return "";
 }
 
-async function agentRefineQuestion(openai_key: string, question: string) {
+async function agentRefineQuestion(question: string) {
   //await openai.responses.create({
   const agent = new ChatOpenAI({
     apiKey: process.env.LLMOD_API_KEY,
     model: CHAT_MODEL,
-    // reasoning: { effort: "medium" },
+    reasoning: { effort: "medium" },
     configuration: {baseURL: "https://api.llmod.ai/v1"},
   });
 
@@ -144,6 +144,7 @@ async function queryPinecone(indexName: string, vector: number[], topK: number):
     return {
       talk_id: String(md.talk_id ?? ""),
       title: String(md.title ?? ""),
+      speakers: String(md.speakers ?? ""),
       topics: String(md.topics ?? ""),
       related_talks: String(md.related_talks ?? ""),
       chunk: String(md.chunk ?? ""),
@@ -164,6 +165,7 @@ function buildAugmentedPrompt(question: string, refinedQuery: string, contexts: 
         `Context ${i + 1}:`,
         `talk_id: ${c.talk_id}`,
         `title: ${c.title}`,
+        `speakers: ${c.speakers ?? ""}`,
         `topics: ${c.topics ?? ""}`,
         `related_talks: ${c.related_talks ?? ""}`,
         `chunk: ${c.chunk}`,
@@ -205,7 +207,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // const openai = new OpenAI({ apiKey: OPENAI_API_KEY, baseURL: "https://api.llmod.ai/v1",});
 
     // 1) Agent step: classify + refine
-    const agent = await agentRefineQuestion(OPENAI_API_KEY, question);
+    const agent = await agentRefineQuestion(question);
 
     // If router says unrelated, still return required schema
     if (agent.task_id === 5) {
@@ -220,7 +222,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // 2) Retrieval (task-aware)
-    const initialTopK = agent.task_id === 2 ? Math.min(MAX_TOP_K, Math.max(DEFAULT_TOP_K, 15)) : DEFAULT_TOP_K;
+    const initialTopK = agent.task_id === 2 ? Math.min(MAX_TOP_K, Math.max(DEFAULT_TOP_K, 10)) : DEFAULT_TOP_K;
 
     const qVec = await embedQuery(OPENAI_API_KEY, agent.refined_query);
 
@@ -237,16 +239,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // 3) Build augmented prompt
     const augmented = buildAugmentedPrompt(question, agent.refined_query, contexts, agent.task_id);
-
-    // 4) LLM answer
-    // const llm = await openai.responses.create({
-    //   model: CHAT_MODEL,
-    //   // temperature: 0.2,
-    //   input: [
-    //     { role: "system", content: augmented.System },
-    //     { role: "user", content: augmented.User },
-    //   ],
-    // });
 
     const llm = new ChatOpenAI({
       apiKey: OPENAI_API_KEY,
