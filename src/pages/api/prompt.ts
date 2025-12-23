@@ -28,7 +28,7 @@ type ContextChunk = {
   title: string;
   chunk: string;
   score: number;
-  // Internal-only (not returned in `context`)
+  speakers?: string;
   topics?: string;
   related_talks?: string;
 };
@@ -107,14 +107,14 @@ async function agentRefineQuestion(question: string) {
     const refined_query = String(parsed.refined_query ?? "").trim();
     const rationale = String(parsed.rationale ?? "").trim();
 
-    if (![1, 2, 3, 4, 5].includes(task_id) || !refined_query) throw new Error("bad router output");
+    if (![1, 2, 3, 4, 5].includes(task_id) || !refined_query) throw new Error("bad agentic RAG output");
     return { task_id, refined_query, rationale, response };
   } catch {
     return { task_id: 5, refined_query: question, rationale: "fallback", response };
   }
 }
 
-async function embedQuery(openai_key: string, text: string): Promise<number[]> {
+async function embedQuery(text: string): Promise<number[]> {
   const emb_model = new OpenAIEmbeddings({
     apiKey: process.env.LLMOD_API_KEY,
     configuration: {
@@ -127,7 +127,6 @@ async function embedQuery(openai_key: string, text: string): Promise<number[]> {
   return vec;
 }
 
-//TODO: add failsafe for at least three talks
 async function queryPinecone(indexName: string, vector: number[], topK: number): Promise<ContextChunk[]> {
   const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY! });
   const index = pc.index(indexName).namespace(PINECONE_NAMESPACE);
@@ -204,8 +203,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!PINECONE_API_KEY) return res.status(500).json({ error: "Server missing PINECONE_API_KEY" });
     if (!PINECONE_INDEX_NAME) return res.status(500).json({ error: "Server missing PINECONE_INDEX_NAME" });
 
-    // const openai = new OpenAI({ apiKey: OPENAI_API_KEY, baseURL: "https://api.llmod.ai/v1",});
-
     // 1) Agent step: classify + refine
     const agent = await agentRefineQuestion(question);
 
@@ -224,7 +221,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // 2) Retrieval (task-aware)
     const initialTopK = agent.task_id === 2 ? Math.min(MAX_TOP_K, Math.max(DEFAULT_TOP_K, 10)) : DEFAULT_TOP_K;
 
-    const qVec = await embedQuery(OPENAI_API_KEY, agent.refined_query);
+    const qVec = await embedQuery(agent.refined_query);
 
     let contexts = await queryPinecone(PINECONE_INDEX_NAME, qVec, initialTopK);
 
@@ -233,7 +230,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       let k = initialTopK;
       while (distinctTalkCount(contexts) < 3 && k < MAX_TOP_K) {
         contexts = await queryPinecone(PINECONE_INDEX_NAME, qVec, k);
-        k = Math.min(MAX_TOP_K, k + 5);
+        k = k + 5;
       }
     }
 
