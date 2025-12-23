@@ -33,7 +33,7 @@ type ContextChunk = {
   related_talks?: string;
 };
 
-const DEFAULT_TOP_K = 10;
+const DEFAULT_TOP_K = 7;
 const MAX_TOP_K = 30;
 const PINECONE_NAMESPACE = "final"; //"testing1";
 
